@@ -159,7 +159,7 @@ def main():
 	  lcd_string(titleStr,LCD_LINE_2)
 	elif dmode == "status": # mpd uptime and C.H.I.P. ip address shown
 	  status = client.stats();
-          uptime = "%.02fh uptime" % (int(status["uptime"])/3600.0)
+          uptime = "%.01fh uptime" % (int(status["uptime"])/3600.0)
 	  lcd_string(uptime,LCD_LINE_1) 
 	  lcd_string(local_ip, LCD_LINE_2)
           # status option 2: total number of songs in db and playtime of db shown
