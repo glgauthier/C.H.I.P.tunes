@@ -14,7 +14,8 @@ Pinout is as follows:
 | LCD_E  | XIO-P2  |
 | LCD_D4 | XIO-P7 |
 | LCD_D5 | XIO-P5 |
-| LCD_D6 | XIO-P7 |
+| LCD_D6 | XIO-P3 |
+| LCD_D7 | XIO-P6 |
 | display mode btn | AP-EINT3 |
 | play/pause btn | XIO-P1 |
 | previous track btn | AP-EINT1 |
