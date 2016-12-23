@@ -86,13 +86,13 @@ def lcd_byte(bits, mode):
     GPIO.output(LCD_D6, False)
     GPIO.output(LCD_D7, False)
     if bits&0x10==0x10:
-    GPIO.output(LCD_D4, True)
+        GPIO.output(LCD_D4, True)
     if bits&0x20==0x20:
-    GPIO.output(LCD_D5, True)
+        GPIO.output(LCD_D5, True)
     if bits&0x40==0x40:
-    GPIO.output(LCD_D6, True)
+        GPIO.output(LCD_D6, True)
     if bits&0x80==0x80:
-    GPIO.output(LCD_D7, True)
+        GPIO.output(LCD_D7, True)
     # Toggle 'Enable' pin
     lcd_toggle_enable()
     # Low bits
@@ -101,13 +101,13 @@ def lcd_byte(bits, mode):
     GPIO.output(LCD_D6, False)
     GPIO.output(LCD_D7, False)
     if bits&0x01==0x01:
-    GPIO.output(LCD_D4, True)
+        GPIO.output(LCD_D4, True)
     if bits&0x02==0x02:
-    GPIO.output(LCD_D5, True)
+        GPIO.output(LCD_D5, True)
     if bits&0x04==0x04:
-    GPIO.output(LCD_D6, True)
+        GPIO.output(LCD_D6, True)
     if bits&0x08==0x08:
-    GPIO.output(LCD_D7, True)
+        GPIO.output(LCD_D7, True)
     # Toggle 'Enable' pin
     lcd_toggle_enable()
 
