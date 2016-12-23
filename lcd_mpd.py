@@ -141,24 +141,7 @@ def main():
                 i = 16;
 
     # ~~~~~~~~ Write text to display ~~~~~~~~
-    if dmode == "songinfo": # artist and song shown on display
-        lcd_string(artistStr,LCD_LINE_1)
-        lcd_string(titleStr,LCD_LINE_2)
-    elif dmode == "stats": # song playtime, number in playlist, and song shown
-        m,s = divmod(int(float(status["elapsed"])),60)
-        stamp = "%02d:%02d" % (m,s)
-        songnum = str(int(status["song"]) + 1)
-        lcd_string(stamp + " " + songnum + " of " + status["playlistlength"],LCD_LINE_1)
-        lcd_string(titleStr,LCD_LINE_2)
-    elif dmode == "status": # mpd uptime and C.H.I.P. ip address shown
-        status = client.stats();
-        uptime = "%.01fh uptime" % (int(status["uptime"])/3600.0)
-        lcd_string(uptime,LCD_LINE_1) 
-        lcd_string(local_ip, LCD_LINE_2)
-        # status option 2: total number of songs in db and playtime of db shown
-        #lcd_string(status["songs"]+" songs",LCD_LINE_1)
-        #playtime = "%.02fh" % (int(status["db_playtime"])/3600.0)
-        #lcd_string(playtime,LCD_LINE_2)
+    updateDisplay(dmode,status,artistStr,titleStr)
         
     # ~~~~~~~~ button press events ~~~~~~~~
     # display mode
@@ -170,16 +153,19 @@ def main():
     else:
         dmode = "songinfo"
         i = 16; j = 16;
+        
     # next song
     if GPIO.event_detected(next):
         if dmode != "status":
             client.next()
-            i = 16; j = 16;
+        i = 16; j = 16;
+            
     # previous song 
     if GPIO.event_detected(prev):
         if dmode != "status":
             client.previous()
-            i = 16; j = 16;
+        i = 16; j = 16;
+            
     # play/pause
     if GPIO.event_detected(playpause):
         if dmode != "status": 
@@ -194,7 +180,7 @@ def main():
     client.disconnect()
 
     time.sleep(1) # 1 second delay
-
+        
 def lcd_init():
     # Initialise display
     lcd_byte(0x33,LCD_CMD) # 110011 Initialise
@@ -264,6 +250,22 @@ def lcd_string(message,line):
     for i in range(LCD_WIDTH):
     lcd_byte(ord(message[i]),LCD_CHR)
 
+def updateDisplay(dmode,status,artistStr,titleStr):
+    if dmode == "songinfo": # artist and song shown on display
+        lcd_string(artistStr,LCD_LINE_1)
+        lcd_string(titleStr,LCD_LINE_2)
+    elif dmode == "stats": # song playtime, number in playlist, and song shown
+        m,s = divmod(int(float(status["elapsed"])),60)
+        stamp = "%02d:%02d" % (m,s)
+        songnum = str(int(status["song"]) + 1)
+        lcd_string(stamp + " " + songnum + " of " + status["playlistlength"],LCD_LINE_1)
+        lcd_string(titleStr,LCD_LINE_2)
+    elif dmode == "status": # mpd uptime and C.H.I.P. ip address shown
+        status = client.stats();
+        uptime = "%.01fh uptime" % (int(status["uptime"])/3600.0)
+        lcd_string(uptime,LCD_LINE_1) 
+        lcd_string(local_ip, LCD_LINE_2)
+        
 if __name__ == '__main__':
     try:
         main()
