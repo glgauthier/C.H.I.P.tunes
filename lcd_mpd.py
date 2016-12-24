@@ -64,6 +64,101 @@ j = 16;
 # default display mode 
 dmode = "status"
 
+def main():
+    """Set up pin interrupts and GPIO"""
+    # interrupt for play/pause
+    GPIO.setup(playpause, GPIO.IN)
+    GPIO.add_event_detect(playpause, GPIO.RISING)
+    GPIO.add_event_callback(playpause,playpauseHandler,100)
+    # interrupt for next song
+    GPIO.setup(next, GPIO.IN)
+    GPIO.add_event_detect(next, GPIO.RISING)
+    GPIO.add_event_callback(next,nextHandler,100)
+    # interrupt for previous song
+    GPIO.setup(prev, GPIO.IN)
+    GPIO.add_event_detect(prev, GPIO.RISING)
+    GPIO.add_event_callback(prev,prevHandler,100)
+    # interrupt for display mode
+    GPIO.setup(dispmode, GPIO.IN)
+    GPIO.add_event_detect(dispmode, GPIO.RISING)
+    GPIO.add_event_callback(dispmode,modeHandler,100)
+    # LCD display GPIO
+    GPIO.setup(LCD_E, GPIO.OUT)  # E
+    GPIO.setup(LCD_RS, GPIO.OUT) # RS
+    GPIO.setup(LCD_D4, GPIO.OUT) # DB4
+    GPIO.setup(LCD_D5, GPIO.OUT) # DB5
+    GPIO.setup(LCD_D6, GPIO.OUT) # DB6
+    GPIO.setup(LCD_D7, GPIO.OUT) # DB7
+
+
+    # Initialise display
+    lcd_init()
+
+    local_ip = "Connecting ... "  
+    
+    while True:
+        # ~~~~~~~~ find local ip for debug if it hasn't already been recorded ~~~~~~~~
+        if len(local_ip) < 10 or local_ip == "Connecting ... ": 
+            local_ip = subprocess.check_output(["hostname","-I"])
+            local_ip = local_ip[:len(local_ip)-1] #cut off \n
+            if len(local_ip) < 10:
+                local_ip = "Connecting ... "
+        client.connect("localhost", 6600)  # connect to localhost:6600
+
+        status = client.status()
+        
+        # ~~~~~~~~ only display "playback stopped" message on non-status disp mode ~~~~~~~~
+        if status["state"] == "stop" and dmode != "status": 
+            lcd_string("Playback Stopped",LCD_LINE_1)
+            lcd_string(status["playlistlength"]+ " in queue",LCD_LINE_2)  
+        elif status["state"] == "stop": # fixes crash if mpd has been started with an empty queue
+            status = client.stats();
+            uptime = "%.01fh uptime" % (int(status["uptime"])/3600.0)
+            lcd_string(uptime,LCD_LINE_1)
+            lcd_string(local_ip, LCD_LINE_2)
+        
+        # ~~~~~~~~ if state == paused and disp is in music mode, indicate so ~~~~~~~~
+        elif status["state"] == "pause" and dmode != "status":
+            lcd_string("Paused         ",LCD_LINE_1)
+            lcd_string(status["song"] + " of " + status["playlistlength"],LCD_LINE_2)
+        
+        # ~~~~~~~~  if a song is currently playing ~~~~~~~~
+        else:
+        # get info on current song
+            current = client.currentsong()
+
+            # ~~~~~~~~ Scrolling artist text ~~~~~~~~
+            artistLength = len(current["artist"]);
+            if (artistLength) <= 16:
+                artistStr = current["artist"]
+            else:
+                if j < (artistLength + 1):
+                    artistStr = current["artist"][(-16+j):j]
+                    j = j + 1
+                if j == (artistLength + 1):
+                    artistStr = current["artist"][(-16+j):j]
+                    j = 16;
+
+            # ~~~~~~~~ Scrolling title text ~~~~~~~~ 
+            titleLength = len(current["title"]);
+            if (titleLength) <= 16:
+                titleStr = current["title"]
+            else:
+                if i < (titleLength + 1):
+                    titleStr = current["title"][(-16+i):i]
+                    i = i + 1
+                if i == (titleLength + 1):
+                    titleStr = current["title"][(-16+i):i]
+                    i = 16;
+
+        # ~~~~~~~~ Write text to display ~~~~~~~~
+        updateDisplay(dmode,status,artistStr,titleStr)
+
+        client.close()
+        client.disconnect()
+
+        time.sleep(0.5) # 1/2 second delay
+        
 def lcd_init():
     # Initialise display
     lcd_byte(0x33,LCD_CMD) # 110011 Initialise
@@ -169,102 +264,6 @@ def playpauseHandler(pin):
             client.pause(0)
         else: # if stopped
             client.play()
-
-def main():
-    """Set up pin interrupts and GPIO"""
-    # interrupt for play/pause
-    GPIO.setup(playpause, GPIO.IN)
-    GPIO.add_event_detect(playpause, GPIO.RISING)
-    GPIO.add_event_callback(playpause,playpauseHandler,100)
-    # interrupt for next song
-    GPIO.setup(next, GPIO.IN)
-    GPIO.add_event_detect(next, GPIO.RISING)
-    GPIO.add_event_callback(next,nextHandler,100)
-    # interrupt for previous song
-    GPIO.setup(prev, GPIO.IN)
-    GPIO.add_event_detect(prev, GPIO.RISING)
-    GPIO.add_event_callback(prev,prevHandler,100)
-    # interrupt for display mode
-    GPIO.setup(dispmode, GPIO.IN)
-    GPIO.add_event_detect(dispmode, GPIO.RISING)
-    GPIO.add_event_callback(dispmode,modeHandler,100)
-    # LCD display GPIO
-    GPIO.setup(LCD_E, GPIO.OUT)  # E
-    GPIO.setup(LCD_RS, GPIO.OUT) # RS
-    GPIO.setup(LCD_D4, GPIO.OUT) # DB4
-    GPIO.setup(LCD_D5, GPIO.OUT) # DB5
-    GPIO.setup(LCD_D6, GPIO.OUT) # DB6
-    GPIO.setup(LCD_D7, GPIO.OUT) # DB7
-
-
-    # Initialise display
-    lcd_init()
-
-    local_ip = "Connecting ... "  
-    
-    while True:
-        # ~~~~~~~~ find local ip for debug if it hasn't already been recorded ~~~~~~~~
-        if len(local_ip) < 10 or local_ip == "Connecting ... ": 
-            local_ip = subprocess.check_output(["hostname","-I"])
-            local_ip = local_ip[:len(local_ip)-1] #cut off \n
-            if len(local_ip) < 10:
-                local_ip = "Connecting ... "
-        client.connect("localhost", 6600)  # connect to localhost:6600
-
-        status = client.status()
-        
-        # ~~~~~~~~ only display "playback stopped" message on non-status disp mode ~~~~~~~~
-        if status["state"] == "stop" and dmode != "status": 
-            lcd_string("Playback Stopped",LCD_LINE_1)
-            lcd_string(status["playlistlength"]+ " in queue",LCD_LINE_2)  
-        elif status["state"] == "stop": # fixes crash if mpd has been started with an empty queue
-            status = client.stats();
-            uptime = "%.01fh uptime" % (int(status["uptime"])/3600.0)
-            lcd_string(uptime,LCD_LINE_1)
-            lcd_string(local_ip, LCD_LINE_2)
-        
-        # ~~~~~~~~ if state == paused and disp is in music mode, indicate so ~~~~~~~~
-        elif status["state"] == "pause" and dmode != "status":
-            lcd_string("Paused         ",LCD_LINE_1)
-            lcd_string(status["song"] + " of " + status["playlistlength"],LCD_LINE_2)
-        
-        # ~~~~~~~~  if a song is currently playing ~~~~~~~~
-        else:
-        # get info on current song
-            current = client.currentsong()
-
-            # ~~~~~~~~ Scrolling artist text ~~~~~~~~
-            artistLength = len(current["artist"]);
-            if (artistLength) <= 16:
-                artistStr = current["artist"]
-            else:
-                if j < (artistLength + 1):
-                    artistStr = current["artist"][(-16+j):j]
-                    j = j + 1
-                if j == (artistLength + 1):
-                    artistStr = current["artist"][(-16+j):j]
-                    j = 16;
-
-            # ~~~~~~~~ Scrolling title text ~~~~~~~~ 
-            titleLength = len(current["title"]);
-            if (titleLength) <= 16:
-                titleStr = current["title"]
-            else:
-                if i < (titleLength + 1):
-                    titleStr = current["title"][(-16+i):i]
-                    i = i + 1
-                if i == (titleLength + 1):
-                    titleStr = current["title"][(-16+i):i]
-                    i = 16;
-
-        # ~~~~~~~~ Write text to display ~~~~~~~~
-        updateDisplay(dmode,status,artistStr,titleStr)
-
-        client.close()
-        client.disconnect()
-
-        time.sleep(0.5) # 1/2 second delay
-        
 
 if __name__ == '__main__':
     try:
